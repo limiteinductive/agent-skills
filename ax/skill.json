@@ -1,0 +1,24 @@
+{
+  "name": "ax",
+  "description": "Audit agent-facing docs and CLI/tool surfaces against AX principles and A/B test every proposed fix with sub-agents before recommending it. Use when agent behavior is wrong due to missing/unclear docs or poor CLI ergonomics (cryptic errors, missing flags, inconsistent interfaces).",
+  "compatibility": "For Claude Code with Opus model. Spawns Haiku sub-agents for A/B testing. Requires repo with agent-facing docs (CLAUDE.md, README.md, etc.).",
+  "version": "1.0.0",
+  "category": "devtools",
+  "tags": [
+    "ax",
+    "audit",
+    "documentation",
+    "agent-experience",
+    "cli",
+    "testing"
+  ],
+  "keywords": [
+    "agent experience audit",
+    "documentation quality",
+    "CLI ergonomics",
+    "A/B test docs",
+    "CLAUDE.md audit",
+    "agent-facing docs",
+    "AX principles"
+  ]
+}
