@@ -1,0 +1,26 @@
+{
+  "name": "wezterm-cli",
+  "description": "Controls a running WezTerm instance using `wezterm cli` to list windows/tabs/panes, spawn tabs/windows, split panes, focus/activate panes or tabs, set tab/window titles, rename workspaces, resize/zoom panes, capture pane text, and send text to panes. Use when user asks to automate a WezTerm layout, manage tabs/panes/workspaces, or run commands in a specific WezTerm pane.",
+  "compatibility": "For Claude Code or any shell-capable agent running on a machine with WezTerm installed and at least one running wezterm GUI or multiplexer instance. Requires permission to run the `wezterm` executable.",
+  "version": "1.0.0",
+  "category": "devtools",
+  "tags": [
+    "wezterm",
+    "terminal",
+    "cli",
+    "panes",
+    "tabs",
+    "automation"
+  ],
+  "keywords": [
+    "wezterm cli",
+    "split pane",
+    "spawn tab",
+    "set tab title",
+    "rename workspace",
+    "send text to pane",
+    "list panes",
+    "focus pane",
+    "create project terminal layout"
+  ]
+}
