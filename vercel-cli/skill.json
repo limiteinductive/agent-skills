@@ -1,0 +1,28 @@
+{
+  "name": "vercel-cli",
+  "description": "Manages Vercel deployments, reads runtime logs, inspects builds, and manages environment variables using `vercel` (or `npx vercel`). Use when user asks to debug a production error, check deployment status, view logs, manage env vars, or troubleshoot a Vercel-hosted app.",
+  "compatibility": "For Claude Code or any shell-capable agent. Requires `vercel` CLI installed (or available via npx) and the user authenticated (`vercel login`). Project should be linked (`vercel link`) for project-scoped commands.",
+  "version": "1.0.0",
+  "category": "devtools",
+  "tags": [
+    "vercel",
+    "deployment",
+    "logs",
+    "hosting",
+    "serverless",
+    "debugging",
+    "nextjs"
+  ],
+  "keywords": [
+    "vercel logs",
+    "vercel deploy",
+    "deployment error",
+    "server components error",
+    "runtime logs",
+    "environment variables",
+    "vercel inspect",
+    "production debugging",
+    "serverless function logs",
+    "edge function logs"
+  ]
+}
