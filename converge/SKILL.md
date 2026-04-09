@@ -150,7 +150,7 @@ Converge on a full implementation of a spec or plan. You (Claude) write the code
 2. **For each step:**
    a. **Implement** — write the code changes for this step.
    b. **Self-check** — run typecheck, lint, tests. Fix any failures.
-   c. **Launch both reviewers** — send them the **diff for this step only** (not full files, not cumulative diffs). For files over 100 lines, send only changed hunks with 10 lines of surrounding context.
+   c. **Launch both reviewers** — send them the **diff for this step only** (not full files, not cumulative diffs). For files over 100 lines, send only changed hunks with **30 lines** of surrounding context (not 10 — reviewers need enough context to spot aliasing, view relationships, and state set up earlier in the function).
    d. **Run rounds 1-N** per the shared round structure above.
    e. **Step converged** → move to next step.
 3. **Final verification** — after all steps, run both reviewers on the full changeset vs. the spec: "Is the spec fully implemented? Any gaps?" This is a single pass, not a convergence loop.
@@ -160,6 +160,7 @@ Converge on a full implementation of a spec or plan. You (Claude) write the code
 
 - **You write the code, reviewers verify.** Don't delegate implementation to subagents.
 - **Typecheck/lint/test between steps.** Don't accumulate broken code.
+- **NEVER skip reviewer rounds.** Every step must be reviewed before committing. Do not commit steps while "waiting for reviewers on a previous step" — that defeats the purpose. If you catch yourself about to commit without launching reviewers, stop. The whole point of converge-implement is that every step gets reviewed. Skipping rounds to move fast is false economy — bugs that slip through cost more time in CI/production than the review would have taken.
 - **Commit after each converged step** (if the user wants — ask on the first step, then follow that preference).
 - **If a reviewer finding requires changing the spec or plan**, flag it to the user before proceeding. Don't silently deviate from the spec.
 - **If stuck on a step** (reviewers keep finding new issues after max rounds), pause and ask the user.
@@ -218,6 +219,21 @@ win. Be direct but constructive.
 
 9. PROPORTIONAL DEPTH. High findings get full analysis and a fix. Medium get a 
    paragraph. Low get one line. Do not write a paragraph about a naming nit.
+
+10. ALIASING AND VIEWS. When reviewing code that operates on tensors, buffers,
+    or arrays: trace each variable back to where it was created. If a variable
+    is a view/slice of another (e.g., `y = x[:n]`), flag any operation that
+    mutates the underlying buffer while the view is still in use. Common 
+    pattern: zeroing a buffer then "copying" from a view of that same buffer 
+    copies zeros. This class of bug is invisible in diffs — it requires reading
+    the surrounding function context.
+
+11. INITIALIZATION ORDERING. When reviewing code that initializes multiple
+    subsystems sequentially: check what mutable state each initialization step 
+    leaves behind. Flag cases where step N leaves shared state (flags, buffers,
+    descriptors) in a state that corrupts step N+1. Common pattern: a setup 
+    function sets a flag for its own use and doesn't reset it, then the next 
+    setup function inherits the stale flag.
 ```
 
 ### Symmetric vs asymmetric prompts
