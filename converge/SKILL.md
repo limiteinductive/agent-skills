@@ -269,7 +269,7 @@ FIX: [suggested rewrite or "delete"]
 
 **Codex (GPT via `codex exec`) — AI-ism and cliché detection:**
 
-Invoke using the isolated Codex pattern from the "Codex invocation pattern" section — embed the text inline in the prompt, run from `/tmp` with `--skip-git-repo-check --ephemeral -s read-only`. Do NOT pipe via stdin or run from the project directory.
+Invoke using the isolated Codex pattern from the "Codex invocation pattern" section — build the prompt as a temp file and pipe via stdin to `codex exec -` from `/tmp`. Do NOT run from the project directory or embed content as a shell argument.
 
 ```
 Find every phrase that sounds AI-generated, formulaic, or like startup content marketing.
@@ -408,43 +408,47 @@ Launch BOTH reviewers in the SAME message with `run_in_background: true`:
 
 Codex CLI is an autonomous agent. When run inside a git repo, it will explore the filesystem to "gather context" before reviewing — burning its token budget and timing out before producing findings. This is the most common failure mode of `/converge`.
 
-**Prevention: isolate Codex from the repo and embed content inline.**
+**Prevention: isolate Codex from the repo and pipe the prompt via stdin.**
+
+The orchestrator must build the prompt in two steps — write it to a temp file, then pipe it to `codex exec` via stdin. Do NOT embed content as a shell argument via `$(cat ...)` — markdown files contain backticks, dollar signs, and quotes that break shell expansion, causing Codex to echo a mangled prompt and produce no findings.
 
 ```bash
-# 1. Write the review target to a temp file
-#    (already done by orchestrator when building the synthesis doc)
+# Step 1: Build the full prompt file (instructions + target content)
+cat > /tmp/codex-prompt.txt << 'ENDOFPROMPT'
+IMPORTANT: Do NOT use any tools. Do NOT read files, run commands, or explore
+the filesystem. Your ENTIRE review target is provided below. Work ONLY from
+this text. Produce your findings and stop.
 
-# 2. Invoke Codex from /tmp — no git repo, nothing to explore
-codex exec \
+<review instructions here>
+
+=== REVIEW TARGET ===
+ENDOFPROMPT
+cat /tmp/converge-review-target.md >> /tmp/codex-prompt.txt
+echo '=== END TARGET ===' >> /tmp/codex-prompt.txt
+
+# Step 2: Pipe to codex via stdin (the `-` arg reads prompt from stdin)
+cat /tmp/codex-prompt.txt | codex exec \
   --skip-git-repo-check \
   -C /tmp \
   --ephemeral \
   -s read-only \
-  "IMPORTANT: Do NOT use any tools. Do NOT read files, run commands, or explore 
-the filesystem. Your ENTIRE review target is provided below. Work ONLY from 
-this text. Produce your findings and stop.
-
-=== REVIEW TARGET ===
-$(cat /tmp/converge-review-target.md)
-=== END TARGET ===
-
-<review instructions here>"
+  -
 ```
 
-**Why each flag matters:**
-- `--skip-git-repo-check` — allows running outside a git repo (otherwise Codex refuses)
-- `-C /tmp` — sets working directory to `/tmp` so there is no repo to explore
+**Why this approach:**
+- **Stdin piping (`-`)** — avoids shell expansion entirely. No backticks, dollar signs, or quotes in the target can break the command. This is the #1 reliability fix.
+- **Heredoc with single-quoted delimiter (`'ENDOFPROMPT'`)** — prevents shell expansion in the instruction portion
+- `--skip-git-repo-check` — allows running outside a git repo
+- `-C /tmp` — no repo to explore
 - `--ephemeral` — don't save session files
-- `-s read-only` — sandbox to read-only as an additional guardrail
-- **Inline content** — the entire target is embedded in the prompt via `$(cat ...)`, so Codex never needs to read files
-- **"Do NOT use any tools"** — explicit instruction at prompt top prevents the agent loop from triggering tool use
+- `-s read-only` — sandbox guardrail
 
-**Timeout:** Always set `timeout: 300000` (5 minutes) on the Bash call. The default 2-minute timeout is too short for large review targets.
+**Timeout:** Always set `timeout: 300000` (5 minutes) on the Bash call.
 
 **Prerequisite:** Before first Codex invocation in a session, verify `codex` is installed and `exec` subcommand works (`codex exec --help`). If not available or flags are unsupported, fall back to single-reviewer mode (Critic only) and note the limitation in the report.
 
 **Do NOT:**
-- Pipe content via stdin (`cat file | codex exec`) — Codex may still explore the repo
+- Embed content as a shell argument via `$(cat file)` — backticks, dollar signs, and quotes in the target will break shell expansion, causing Codex to echo a mangled prompt with no findings
 - Run Codex from the project directory — it WILL explore the filesystem
 - Omit the "Do NOT use any tools" instruction — without it, Codex defaults to agent behavior
 
