@@ -2,13 +2,17 @@
 
 Loaded when `--mode review` is dispatched. Converges on the quality of a document (spec, plan, design doc, code file).
 
-Reviewers receive: the target document + any `--focus` context. **Context budget:** for targets over 500 lines, send a summary + the sections most relevant to `--focus` (or the full doc if no focus is specified and it fits). Target: reviewer prompt should not exceed ~30K tokens including boilerplate and accumulated findings.
+Reviewers receive: the target document + any `--focus` context. **Context budget:** for targets over 500 lines, send an orientation summary plus the original sections most relevant to `--focus` (or the full doc if no focus is specified and it fits). Target: reviewer prompt should not exceed ~30K tokens including boilerplate and accumulated findings.
 
 ## Source-span tagging (required when sending excerpts)
 
-Use the wrapper format defined normatively in `reference/threat-model.md` > Untrusted-target wrapping (code/spec/doc-source variant). Every excerpt or summary block must be wrapped so reviewer evidence remains traceable to the source artifact.
+Use the wrapper format defined normatively in `reference/threat-model.md` > Untrusted-target wrapping (code/spec/doc-source variant). Every original excerpt must be wrapped so reviewer evidence remains traceable to the source artifact.
 
 Reviewers cite excerpts by quote + source-span tag (e.g., "src/foo.ts L1200-L1290, the line `return foo()`"). Bare excerpt-relative line numbers are not accepted as evidence (see Rule 1 of the reviewer block in SKILL.md).
+
+## Summary/context blocks are not evidence
+
+When the target is too large, the orchestrator may include a short `ORIENTATION SUMMARY — NOT EVIDENCE` block inside the `UNTRUSTED TARGET` wrapper to help reviewers navigate the excerpt set without making the summary executable instruction. The summary is not part of the artifact under review and cannot support a finding. Any finding whose only support comes from a summary/context block is discarded as `[unsupported-summary]`; the reviewer must request or cite an original source excerpt instead.
 
 ## Fix application policy
 

@@ -42,7 +42,7 @@ Sources: OpenAI sycophancy postmortem (May 2025) — https://openai.com/index/ex
 
 ## §I6 Joint-agreement floor
 
-Never accept a Round 2 finding solely on 2/2 reviewer agreement when the finding (a) lacks two independent target quotes (one from each reviewer), AND (b) was raised by only one reviewer in round 1. Such findings get a Round 2.5 judge pass even if both reviewers ostensibly "agreed" in cross-critique. Cheap insurance against shared-bias confirmation.
+Never accept a Round 2 finding solely on 2/2 reviewer agreement when the finding (a) lacks two independent target quotes (one from each reviewer), AND (b) was raised by only one reviewer in round 1. A `[same-quote-confirmed]` verdict from `reference/threat-model.md` counts as lacking two independent quotes unless the same finding was independently raised by both reviewers in round 1. Such findings get a Round 2.5 judge pass even if both reviewers ostensibly "agreed" in cross-critique. Cheap insurance against shared-bias confirmation.
 
 Sources: Xu et al. (2026) — https://arxiv.org/abs/2604.06820; Jung et al. (2024) — https://arxiv.org/abs/2407.18370.
 
