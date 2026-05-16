@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RELEASE_BIN="$SCRIPT_DIR/target/release/study-mode-memory"
+
+if [[ -x "$RELEASE_BIN" ]]; then
+  exec "$RELEASE_BIN" "$@"
+fi
+
+exec cargo run --quiet --manifest-path "$SCRIPT_DIR/Cargo.toml" -- "$@"

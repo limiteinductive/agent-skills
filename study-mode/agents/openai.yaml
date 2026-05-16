@@ -1,0 +1,4 @@
+interface:
+  display_name: "Study Mode"
+  short_description: "Adaptive tutoring with spaced recall"
+  default_prompt: "Use $study-mode to teach me a topic Socratically, review what I am due to remember, and track what I learn."
