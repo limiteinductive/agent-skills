@@ -39,7 +39,7 @@ same band.
 Spectrum examples:
 
 - `0.0/5`: No agent involvement, strong provenance claim, and strong ownership across material areas.
-- `0.5/5`: No agent involvement claimed and mostly supported, but audit coverage is limited or one minor area is weak.
+- `0.5/5`: Credible no-agent authorship claim, but author is rusty, audit coverage is limited, or one minor area is weak.
 - `1.1/5`: Agent only ran commands, formatted, reviewed, or drafted metadata. Author owns all substance.
 - `1.8/5`: Agent stayed auxiliary, but shaped some surrounding text, review framing, or cleanup choices.
 - `2.2/5`: Agent wrote substantial code from a precise human design. Author can reproduce and extend the approach.
@@ -109,7 +109,7 @@ Use these to separate `3/4/5`.
 - Ask why a test, citation, benchmark, example, or review check proves the intended claim and what it does not prove.
 - Ask how behavior, reader belief, project state, or operational risk differs before and after the contribution.
 
-### Generative Probes
+### Authorship Probes
 
 Use these to separate `0/1/2/3`.
 
@@ -118,7 +118,7 @@ Use these to separate `0/1/2/3`.
 - Ask how they would rewrite a small area for clarity, safety, correctness, or stronger evidence.
 - Ask them to predict one realistic follow-up bug, objection, misunderstanding, or failure mode and where they would look first.
 
-Generative ownership is the main evidence for "I could have written this myself." Passive understanding is not enough.
+For `0/1/2`, use these as authorship-consistency probes, not present-recall tests. A rusty author may forget details and still show author-consistent familiarity: where the work came from, why it is structured that way, what alternatives were considered, what they remember struggling with, and what they would inspect first to recover context. Do not punish weak present recall as agent involvement when provenance is credible.
 
 ## Question Rules
 
@@ -177,18 +177,18 @@ Failure evidence:
 - Repeated "not sure" on material behavior.
 - Refusal or persistently thin answers.
 
-Honest uncertainty is better than confident wrong, but uncertainty is not proof of ownership. Refusal or persistently thin answers are evidence. In that case, keep the result at `5/5` with high confidence unless the artifact itself proves a narrower claim.
+Honest uncertainty is better than confident wrong, but uncertainty is not proof of ownership. Refusal or persistently thin answers are evidence. If provenance is weak or agentic, keep the result at `5/5` with high confidence unless the artifact itself proves a narrower claim. If provenance is credibly no-agent or auxiliary-only, treat weak recall as lower confidence or a higher decimal inside `0/1`, not as proof that an agent produced the substance.
 
 ## Scoring Guidance
 
-- `0/5`: Requires explicit no-agent attestation and strong generative ownership across material areas.
-- `1/5`: Requires attestation that agent work was mechanical or auxiliary, plus strong generative ownership.
-- `2/5`: Requires attestation that agent wrote substantial parts under direct guidance, plus evidence the author could reproduce or extend the approach.
+- `0/5`: Requires credible no-agent attestation. Strong authorship-consistency evidence lowers within the band; weak recall alone does not push the score to band 3.
+- `1/5`: Requires credible attestation that agent work was mechanical or auxiliary. Authorship-consistency probes should test whether the author owns the substance, not whether they remember every detail.
+- `2/5`: Requires credible attestation that agent wrote substantial parts under direct guidance, plus evidence the author shaped the design, constraints, or final content enough to own the direction.
 - `3/5`: Requires detailed review ownership. Author understands important details, tradeoffs, tests, and failure modes, even if agent produced most of it.
 - `4/5`: Author has high-level understanding and real sanity checks, but misses important details or cannot own extensions.
 - `5/5`: Broad delegation, no meaningful review, refusal, thin answers, or major gaps in material behavior. Use `5.0/5` for zero demonstrated understanding.
 
-Do not lower below `3/5` from comprehension probes alone. Use provenance plus generative ownership for `0/1/2`.
+Do not raise credible `0/1/2` provenance claims into band 3 only because the author has weak present recall. Raise them only when authorship-consistency probes contradict the provenance claim or show the author did not own the substantive work. Use comprehension probes mainly to separate `3/4/5`.
 Pick the integer band first, then choose the decimal within that band. If the
 evidence only supports a band but not a finer position, use `.0` and lower
 confidence rather than inventing precision.
