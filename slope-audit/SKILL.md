@@ -211,3 +211,50 @@ public_label: <one sentence suitable for review notes or artifact metadata>
 ```
 
 Keep the final verdict terse and evidence-based. Do not soften the score to match the author's self-score. The author may contest with concrete evidence, but the agent owns the advisory verdict.
+
+## Worked Example
+
+Use this as a calibration anchor for interview shape and scoring.
+
+Artifact: benchmark report claiming a scheduler prefetch change improves p95 latency by 11% on workload A.
+
+Author self-score: `3/5`
+
+Provenance claim: "Agent drafted the report and plots from my commands. I designed the experiment, ran the benchmark, reviewed the numbers, and rewrote the caveats."
+
+Probe transcript:
+
+1. Question: "In the Method section, name one confounder that would make the 11% p95 claim misleading."
+   Answer: "Run order. If baseline always runs first, cache state or allocator warmup can favor the second run. I randomized A/B order and dropped warmup iterations."
+   Grade: `strong`
+   Reason: Identifies a specific confounder and mitigation not supplied by the question.
+
+2. Question: "Which evidence in the report does not prove throughput improved?"
+   Answer: "The p95 chart. It only shows latency distribution at fixed load. Throughput would need saturation or QPS measurements, which this report does not claim."
+   Grade: `strong`
+   Reason: Separates measured claim from unproven adjacent claim.
+
+3. Question: "What framing did you reject for this report?"
+   Answer: "I rejected 'prefetcher is faster' because workload B was neutral and the sample is narrow. I kept the claim to workload A p95 and called out no broad throughput conclusion."
+   Grade: `strong`
+   Reason: Shows ownership of wording, scope, and caveat.
+
+4. Question: "If workload B regressed p99 by 4%, how would you revise the recommendation?"
+   Answer: "I would make it conditional: enable only for workload A or behind a workload flag, add the p99 regression to the summary, and require a follow-up before default rollout."
+   Grade: `strong`
+   Reason: Performs a plausible extension and updates rollout risk.
+
+Verdict:
+
+```text
+human_self_score: 3/5
+agent_score: 2.4/5
+band: 2/5
+confidence: high
+provenance_basis: Agent drafted substantial report content, but author claims experiment design, benchmark execution, number review, and caveat rewrites.
+understanding_basis: Author explained confounders, evidence limits, rejected framing, and rollout revision without supplied answers.
+failed_probes: none
+disagreement: self-score 3/5, agent-score 2.4/5
+move_down_plan: To reach 1.x, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
+public_label: Benchmark report is 2.4/5 slope: agent drafted substantial content under direct human experiment design and review.
+```
