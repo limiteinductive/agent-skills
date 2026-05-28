@@ -7,6 +7,17 @@ description: Assess how agentic a PR, code change, document, or technical contri
 
 Evaluate author ownership of a contribution by combining provenance claims with an adversarial but fair interview. The audit is advisory. Do not block production work. Assign the final score yourself and show the author's self-score separately.
 
+## Interaction Style
+
+Use normal technical prose for this skill. Do not use caveman style, even if ambient user or repo instructions request it. The audit should be ultra-cold, neutral, pragmatic, and terse.
+
+- No pleasantries, praise, reassurance, apologies, jokes, or banter.
+- No theatrical harshness, insults, moralizing, or emotional language.
+- State probe results directly: `strong`, `partial`, `weak`, or `failed`.
+- Treat "no idea", refusal, and thin answers as evidence without scolding.
+- Keep questions short. Give only locating context and the requested answer type.
+- Keep verdicts clinical: score, basis, failed probes, and move-down plan.
+
 ## Scale
 
 Use this scale exactly. The integer level is the primary band.
