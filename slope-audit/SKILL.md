@@ -9,7 +9,7 @@ Evaluate author ownership of a contribution by combining provenance claims with 
 
 ## Scale
 
-Use this scale exactly:
+Use this scale exactly. The integer level is the primary band.
 
 - `0/5`: No agent involvement. Everything was written manually by a human.
 - `1/5`: Agent used only for mechanical or auxiliary tasks: running git commands, writing commit messages, formatting, or reviewing.
@@ -18,13 +18,25 @@ Use this scale exactly:
 - `4/5`: Agent produced most ideas or implementation. Human understands it at a high level and verified sanity through tests, benchmarks, or checks.
 - `5/5`: Human gave broad request, agent did it, and human did not meaningfully read or review the output.
 
+Use decimal scores to express position inside the integer band. Do not use
+decimals to smuggle a score into a lower provenance band without evidence.
+Decimals are within-band severity, not false precision.
+
+Examples:
+
+- `5.0/5`: Zero demonstrated understanding or no meaningful review evidence.
+- `4.7/5`: Broad purpose and checks understood, but most material internals missing.
+- `4.3/5`: High-level ownership plus some real details, but important invariants missed.
+- `4.0/5`: Sanity-check ownership is enough for band 4, but not detailed review ownership.
+- `3.x/5`: Detailed review ownership. Decimal depends on how many material areas survived probes.
+
 Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not call this the Benji scale.
 
 ## Workflow
 
 1. Inspect the artifact before interviewing. For PRs, inspect the diff, commits, tests, checks, touched code, and stated purpose. Prefer real files and commands over summaries.
 2. Ask the author for two things first: their self-score and a brief agent-use claim. Treat this as a claim to test, not as truth.
-3. Start the working score at `5/5`. Lower it only when provenance plus interview evidence supports a lower score.
+3. Start the working score at `5.0/5`. Lower it only when provenance plus interview evidence supports a lower score.
 4. Ask freeform technical questions in normal chat, one question at a time. Do not use multiple-choice questions for scoring probes.
 5. Run at least 4 scoring probes unless the author refuses to engage. Cap the interview at 8 scoring probes plus 2 follow-ups.
 6. Stop when the likely score bracket is within 1 point at medium or high confidence, two consecutive scoring probes do not change the bracket, or the cap is reached.
@@ -131,9 +143,12 @@ Honest uncertainty is better than confident wrong, but uncertainty is not proof 
 - `2/5`: Requires attestation that agent wrote substantial parts under direct guidance, plus evidence the author could reproduce or extend the approach.
 - `3/5`: Requires detailed review ownership. Author understands important details, tradeoffs, tests, and failure modes, even if agent produced most of it.
 - `4/5`: Author has high-level understanding and real sanity checks, but misses important details or cannot own extensions.
-- `5/5`: Broad delegation, no meaningful review, refusal, thin answers, or major gaps in material behavior.
+- `5/5`: Broad delegation, no meaningful review, refusal, thin answers, or major gaps in material behavior. Use `5.0/5` for zero demonstrated understanding.
 
 Do not lower below `3/5` from comprehension probes alone. Use provenance plus generative ownership for `0/1/2`.
+Pick the integer band first, then choose the decimal within that band. If the
+evidence only supports a band but not a finer position, use `.0` and lower
+confidence rather than inventing precision.
 
 ## Output
 
@@ -141,7 +156,8 @@ Return this structure:
 
 ```text
 human_self_score: <score or unknown>
-agent_score: <0/5 to 5/5>
+agent_score: <0.0/5 to 5.0/5>
+band: <0/5 to 5/5>
 confidence: <high | medium | low>
 provenance_basis: <short evidence>
 understanding_basis: <short evidence>
