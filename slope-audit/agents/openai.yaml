@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slope Audit"
+  short_description: "Audit PR agent ownership level"
+  default_prompt: "Use $slope-audit to interview me on a PR and assign an advisory slope score."
