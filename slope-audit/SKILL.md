@@ -22,13 +22,24 @@ Use decimal scores to express position inside the integer band. Do not use
 decimals to smuggle a score into a lower provenance band without evidence.
 Decimals are within-band severity, not false precision.
 
-Examples:
+Higher decimals mean more agentic contribution or weaker ownership inside the
+same band.
 
-- `5.0/5`: Zero demonstrated understanding or no meaningful review evidence.
-- `4.7/5`: Broad purpose and checks understood, but most material internals missing.
-- `4.3/5`: High-level ownership plus some real details, but important invariants missed.
+Spectrum examples:
+
+- `0.0/5`: No agent involvement, strong provenance claim, and strong ownership across material areas.
+- `0.5/5`: No agent involvement claimed and mostly supported, but audit coverage is limited or one minor area is weak.
+- `1.1/5`: Agent only ran commands, formatted, reviewed, or drafted metadata. Author owns all substance.
+- `1.8/5`: Agent stayed auxiliary, but shaped some surrounding text, review framing, or cleanup choices.
+- `2.2/5`: Agent wrote substantial code from a precise human design. Author can reproduce and extend the approach.
+- `2.8/5`: Agent wrote substantial code under guidance. Author understands it well, but would struggle to recreate parts unaided.
+- `3.1/5`: Agent produced most implementation. Author reviewed deeply and answered most detail probes.
+- `3.7/5`: Detailed review ownership exists, but one material invariant, test gap, or edge case was missed.
 - `4.0/5`: Sanity-check ownership is enough for band 4, but not detailed review ownership.
-- `3.x/5`: Detailed review ownership. Decimal depends on how many material areas survived probes.
+- `4.3/5`: High-level ownership plus some real details, but important invariants missed.
+- `4.7/5`: Broad purpose and checks understood, but most material internals missing.
+- `4.9/5`: Minimal review evidence beyond "tests passed" or broad intent.
+- `5.0/5`: Zero demonstrated understanding or no meaningful review evidence.
 
 Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not call this the Benji scale.
 
