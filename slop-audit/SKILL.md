@@ -81,7 +81,8 @@ Keep this recap neutral. Do not suggest which score the author should choose.
 4. Ask freeform technical questions in normal chat, one question at a time. Do not use multiple-choice questions for scoring probes.
 5. Run at least 4 scoring probes unless the author refuses to engage. Cap the interview at 8 scoring probes plus 2 follow-ups.
 6. Stop when the likely score bracket is within 1 point at medium or high confidence, two consecutive scoring probes do not change the bracket, or the cap is reached.
-7. Produce the output contract. Include disagreement between author self-score and agent score.
+7. Build a probe ledger and derive the provisional agent score from the ledger before comparing it to the author's self-score.
+8. Produce the output contract. Include disagreement between author self-score and agent score.
 
 If the author has the artifact open during the interview, state that the audit measures current review and maintenance ownership, not necessarily what they knew while producing the contribution.
 
@@ -198,6 +199,30 @@ Failure evidence:
 
 Honest uncertainty is better than confident wrong, but uncertainty is not proof of ownership. Refusal or persistently thin answers are evidence. If provenance is weak or agentic, keep the result at `5/5` with high confidence unless the artifact itself proves a narrower claim. If provenance is credibly no-agent or auxiliary-only, treat weak recall as lower confidence or a higher decimal inside `0/1`, not as proof that an agent produced the substance.
 
+## Anti-Anchoring
+
+The author's self-score is a claim to test, not scoring evidence.
+
+Before the final verdict:
+
+1. Write a probe ledger with counts by probe type and grade: provenance, comprehension, authorship, each graded `strong`, `partial`, `weak`, or `failed`.
+2. Derive the integer band from provenance and probe evidence without using the author's self-score.
+3. Derive the decimal from severity inside that band without using the author's self-score.
+4. Compare the provisional agent score to the author's self-score only after steps 1-3.
+
+Exact-match tripwire: if `abs(agent_score - human_self_score) < 0.3`, rerun the derivation from the probe ledger with the author's self-score ignored. Keep the close or exact match only if the ledger independently supports it. Mention the tripwire result in `disagreement` or `understanding_basis`.
+
+Use rubric aggregation, not gestalt:
+
+- A credible `0/1/2` provenance claim needs authorship-consistency evidence. Weak present recall alone does not break it.
+- A failed material authorship or provenance probe blocks `0/1/2` unless other direct evidence strongly verifies the claim.
+- For `2/5`, require evidence the author shaped design, constraints, or final content enough to own direction. If agents produced most substance and design-ownership evidence is weak or failed, use `3/5` or higher.
+- For `3/5`, require detailed review ownership across material areas. If detail probes are mostly weak or failed, use `4/5` or higher.
+- For `4/5`, require high-level understanding plus real sanity checks. If these are absent or merely asserted, use `5/5`.
+- Strong-majority evidence lowers the decimal inside a band. Weak or failed material probes raise it inside the band.
+
+If the author raises a correct flaw in the rubric or audit method, treat that as instrument feedback. Do not lower the slop score for noticing the flaw unless the answer also proves artifact ownership.
+
 ## Scoring Guidance
 
 - `0/5`: Requires credible no-agent attestation. Strong authorship-consistency evidence lowers within the band; weak recall alone does not push the score to band 3.
@@ -221,6 +246,7 @@ human_self_score: <score or unknown>
 agent_score: <0.0/5 to 5.0/5>
 band: <0/5 to 5/5>
 confidence: <high | medium | low>
+probe_ledger: <counts by probe type and grade>
 provenance_basis: <short evidence>
 understanding_basis: <short evidence>
 failed_probes: <none or concise list>
@@ -272,6 +298,7 @@ human_self_score: 3/5
 agent_score: 2.4/5
 band: 2/5
 confidence: high
+probe_ledger: provenance strong 1, comprehension strong 2, authorship strong 1
 provenance_basis: Agent drafted substantial report content, but author claims experiment design, benchmark execution, number review, and caveat rewrites.
 understanding_basis: Author explained confounders, evidence limits, rejected framing, and rollout revision without supplied answers.
 failed_probes: none
@@ -319,6 +346,7 @@ human_self_score: 0/5
 agent_score: 0.6/5
 band: 0/5
 confidence: medium
+probe_ledger: provenance strong 1, authorship strong 1 partial 1, comprehension weak 1
 provenance_basis: Author credibly attests no agent involvement across code, tests, commit, and review replies.
 understanding_basis: Author is rusty, but gave author-consistent constraints, recovery path, and rejected-library rationale.
 failed_probes: exact test invariant
