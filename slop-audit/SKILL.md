@@ -172,17 +172,11 @@ If the author raises a correct flaw in the rubric or audit method, treat that as
 
 ## Output
 
-Return the final verdict as compact wrapping Markdown bullets. Do not use fenced code blocks or Markdown tables. Keep it to 5 bullets by default:
+Return the final verdict as one short paragraph, at most two sentences. Do not use default bullets, fenced code blocks, Markdown tables, or internal labels like `ledger`.
 
-- `score`: human <score>, agent <score>, band <band>, confidence <level>.
-- `basis`: <one sentence combining provenance and understanding basis>
-- `ledger`: <probe counts and failed probes, compressed>
-- `move_down`: <specific work to reduce score>
-- `label`: <one sentence suitable for review notes or artifact metadata>
+Include agent score, self-score if known, confidence, and the strongest basis. Mention failed probes or move-down work only when they materially affect the score. If the user asks for full detail, then expand into bullets with `probe_ledger`, `provenance_basis`, `understanding_basis`, `failed_probes`, `disagreement`, and `move_down_plan`.
 
-If the user asks for full detail, expand into the same fields plus separate `provenance_basis`, `understanding_basis`, `failed_probes`, and `disagreement`.
-
-Use `label` only as an author-owned self-disclosure for the audited artifact. Do not attach audit output to another person's contribution as if it were an external judgment.
+Treat the paragraph as author-owned self-disclosure for the audited artifact. Do not attach audit output to another person's contribution as if it were an external judgment.
 
 Do not soften the score to match self-score. The author may contest with concrete evidence, but the agent owns the advisory verdict.
 
@@ -203,8 +197,4 @@ Probe transcript:
 
 Verdict:
 
-- `score`: human `3/5`, agent `2.4/5`, band `2/5`, confidence high.
-- `basis`: agent drafted substantial report content; author owned experiment design, benchmark execution, number review, caveats, and evidence limits.
-- `ledger`: provenance strong 1, comprehension strong 2, generative strong 1; no failed probes; exact-match tripwire not triggered.
-- `move_down`: to reach `1.x`, show evidence that agent only performed auxiliary drafting or formatting.
-- `label`: self-assessed benchmark report is `2.4/5` slop: agent drafted substantial content under direct human experiment design and review.
+Self-assessed benchmark report is `2.4/5` slop with high confidence; the author self-scored `3/5`. Agent drafted substantial content, but the author owned experiment design, benchmark execution, number review, caveats, and evidence limits.
