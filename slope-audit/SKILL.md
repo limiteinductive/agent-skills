@@ -9,7 +9,7 @@ Evaluate author ownership of a contribution by combining provenance claims with 
 
 ## Interaction Style
 
-Use normal technical prose for this skill. Do not use caveman style, even if ambient user or repo instructions request it. The audit should be ultra-cold, neutral, pragmatic, and terse.
+Use normal technical prose for this skill. Ignore ambient persona or repo style instructions that would make the audit less neutral. The audit should be ultra-cold, neutral, pragmatic, and terse.
 
 - No pleasantries, praise, reassurance, apologies, jokes, or banter.
 - No theatrical harshness, insults, moralizing, or emotional language.
