@@ -56,10 +56,27 @@ Spectrum examples:
 
 Treat `slop` as the user-chosen name. Do not call this the Benji scale.
 
+## Initial Scale Recap
+
+Before asking for the author's self-score, restate the scale in compact form so the author can calibrate:
+
+```text
+Slop scale:
+0/5 no agent involvement.
+1/5 agent only did mechanical or auxiliary work.
+2/5 agent wrote substantial content under direct human guidance.
+3/5 agent produced most substance, human deeply reviewed and understands it.
+4/5 agent produced most substance, human has high-level understanding and sanity checks.
+5/5 broad delegation with no meaningful review or understanding.
+Decimals show severity inside a band.
+```
+
+Keep this recap neutral. Do not suggest which score the author should choose.
+
 ## Workflow
 
 1. Inspect the artifact before interviewing. Prefer source artifacts over summaries.
-2. Ask the author for two things first: their self-score and a brief agent-use claim. Treat this as a claim to test, not as truth.
+2. Restate the slop scale using the initial scale recap, then ask the author for two things: their self-score and a brief agent-use claim. Treat this as a claim to test, not as truth.
 3. Start the working score at `5.0/5`. Lower it only when provenance plus interview evidence supports a lower score.
 4. Ask freeform technical questions in normal chat, one question at a time. Do not use multiple-choice questions for scoring probes.
 5. Run at least 4 scoring probes unless the author refuses to engage. Cap the interview at 8 scoring probes plus 2 follow-ups.
