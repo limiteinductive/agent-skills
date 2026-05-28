@@ -174,7 +174,7 @@ If the author raises a correct flaw in the rubric or audit method, treat that as
 
 Return the final verdict as one short paragraph, at most two sentences. Do not use default bullets, fenced code blocks, Markdown tables, or internal labels like `ledger`.
 
-Include agent score, self-score if known, confidence, and the strongest basis. Mention failed probes or move-down work only when they materially affect the score. Do not mention consultation mode in the public verdict unless the user asks. If the user asks for full detail, then expand into bullets with `probe_ledger`, `provenance_basis`, `understanding_basis`, `failed_probes`, `disagreement`, and `move_down_plan`.
+Include agent score, self-score if known, confidence, and the strongest basis. Mention failed probes or move-down work only when they materially affect the score. Do not mention consultation mode in the public verdict unless the user asks. If publishing the audit outside the current chat, append a separate signature line: `Audit by <agent name and model if known>.` If the user asks for full detail, then expand into bullets with `probe_ledger`, `provenance_basis`, `understanding_basis`, `failed_probes`, `disagreement`, and `move_down_plan`.
 
 Treat the paragraph as author-owned self-disclosure for the audited artifact. Do not attach audit output to another person's contribution as if it were an external judgment.
 
