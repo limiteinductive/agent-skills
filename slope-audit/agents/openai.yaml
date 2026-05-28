@@ -1,4 +1,0 @@
-interface:
-  display_name: "Slope Audit"
-  short_description: "Audit artifact agent ownership"
-  default_prompt: "Use $slope-audit to interview me on a contribution and assign an advisory slope score."

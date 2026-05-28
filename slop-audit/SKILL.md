@@ -1,9 +1,9 @@
 ---
-name: slope-audit
-description: Assess how agentic a PR, code change, document, plan, issue, message, report, or technical contribution is on a 0/5 to 5/5 slope scale. Use when Codex needs to interview an author about ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slope-audit.
+name: slop-audit
+description: Assess how agentic a PR, code change, document, plan, issue, message, report, or technical contribution is on a 0/5 to 5/5 slop scale. Use when Codex needs to interview an author about ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slop-audit.
 ---
 
-# Slope Audit
+# Slop Audit
 
 Evaluate author ownership of a contribution by combining provenance claims with an adversarial but fair interview. The audit is advisory. Do not block production work. Assign the final score yourself and show the author's self-score separately.
 
@@ -52,7 +52,7 @@ Spectrum examples:
 - `4.9/5`: Minimal review evidence beyond "tests passed" or broad intent.
 - `5.0/5`: Zero demonstrated understanding or no meaningful review evidence.
 
-Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not call this the Benji scale.
+Treat `slop` as the user-chosen name. Do not call this the Benji scale.
 
 ## Workflow
 
@@ -256,5 +256,5 @@ understanding_basis: Author explained confounders, evidence limits, rejected fra
 failed_probes: none
 disagreement: self-score 3/5, agent-score 2.4/5
 move_down_plan: To reach 1.x, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
-public_label: Benchmark report is 2.4/5 slope: agent drafted substantial content under direct human experiment design and review.
+public_label: Benchmark report is 2.4/5 slop: agent drafted substantial content under direct human experiment design and review.
 ```
