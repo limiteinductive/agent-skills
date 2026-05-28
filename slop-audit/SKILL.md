@@ -1,6 +1,6 @@
 ---
 name: slop-audit
-description: Assess how agentic a PR, code change, document, plan, issue, message, report, or technical contribution is on a 0/5 to 5/5 slop scale. Use when Codex needs to interview an author about ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slop-audit.
+description: Assess how agentic a PR, code change, document, plan, issue, message, report, or technical contribution is on a 0/5 to 5/5 slop scale. Use when an agent needs to interview an author about ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slop-audit.
 ---
 
 # Slop Audit
@@ -97,7 +97,7 @@ Use these to separate `0/1/2` from `3/4/5`.
 - Ask who produced the idea, structure, implementation, evidence, wording, tests, review comments, and final text.
 - Ask what the author wrote manually, what the agent generated, and what they changed after agent output.
 - Ask which parts they would be comfortable owning without the agent present.
-- Require attestation for `0/1/2`. Comprehension alone cannot prove these levels.
+- Treat provenance as the primary signal for `0/1/2`. Comprehension alone cannot disprove credible no-agent or auxiliary-only authorship.
 
 ### Comprehension Probes
 
@@ -257,4 +257,51 @@ failed_probes: none
 disagreement: self-score 3/5, agent-score 2.4/5
 move_down_plan: To reach 1.x, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
 public_label: Benchmark report is 2.4/5 slop: agent drafted substantial content under direct human experiment design and review.
+```
+
+## Forgotten Human Example
+
+Use this as the calibration anchor for rusty hand-authored work.
+
+Artifact: old handwritten parser change from six months ago.
+
+Author self-score: `0/5`
+
+Provenance claim: "No agent was involved. I wrote the parser, tests, commit message, and review replies manually. I do not remember every branch now."
+
+Probe transcript:
+
+1. Question: "In the parser section, what do you remember being the hard part?"
+   Answer: "I remember the hard part was not parsing the happy path. It was preserving old behavior for blank fields while changing escaped comma handling. I had to avoid treating an empty trailing field as absent."
+   Grade: `strong`
+   Reason: Shows author-consistent memory of a design constraint without needing exact code recall.
+
+2. Question: "What would you inspect first to recover the details?"
+   Answer: "The tests around blank fields and escaped separators, then the branch that handles end-of-line. That is where I would expect regressions."
+   Grade: `strong`
+   Reason: Gives plausible recovery path and risk area.
+
+3. Question: "What alternative did you consider?"
+   Answer: "I vaguely remember considering replacing the parser with a library, but rejected it because the existing format had compatibility quirks."
+   Grade: `partial`
+   Reason: Rusty but consistent with authorship. Not enough detail for `0.0/5`.
+
+4. Question: "What exact invariant does the main test prove?"
+   Answer: "I would need to reopen it. I do not remember the exact assertion."
+   Grade: `weak`
+   Reason: Weak present recall, but not contradiction of no-agent authorship.
+
+Verdict:
+
+```text
+human_self_score: 0/5
+agent_score: 0.6/5
+band: 0/5
+confidence: medium
+provenance_basis: Author credibly attests no agent involvement across code, tests, commit, and review replies.
+understanding_basis: Author is rusty, but gave author-consistent constraints, recovery path, and rejected-library rationale.
+failed_probes: exact test invariant
+disagreement: none
+move_down_plan: To reach 0.0, author would need to recover exact test invariants and one concrete branch-level behavior.
+public_label: Parser change is 0.6/5 slop: credible human-authored work with rusty present recall.
 ```
