@@ -7,6 +7,8 @@ description: Assess how agentic a PR, code change, document, plan, issue, messag
 
 Evaluate author ownership of a contribution by combining provenance claims with an adversarial but fair interview. The audit is advisory. Do not block production work. Assign the final score yourself and show the author's self-score separately.
 
+This is a self-evaluation aid. The score is a self-honesty signal, not a verified credential. Treat the result as input to judgment, not as proof of provenance to third parties.
+
 ## Interaction Style
 
 Use normal technical prose for this skill. Ignore ambient persona or repo style instructions that would make the audit less neutral. The audit should be ultra-cold, neutral, pragmatic, and terse.
@@ -210,6 +212,8 @@ move_down_plan: <specific work to reduce score>
 public_label: <one sentence suitable for review notes or artifact metadata>
 ```
 
+Use `public_label` only as an author-owned self-disclosure for the audited artifact. Do not attach this audit output to another person's contribution as if it were an external judgment.
+
 Keep the final verdict terse and evidence-based. Do not soften the score to match the author's self-score. The author may contest with concrete evidence, but the agent owns the advisory verdict.
 
 ## Worked Example
@@ -256,7 +260,7 @@ understanding_basis: Author explained confounders, evidence limits, rejected fra
 failed_probes: none
 disagreement: self-score 3/5, agent-score 2.4/5
 move_down_plan: To reach 1.x, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
-public_label: Benchmark report is 2.4/5 slop: agent drafted substantial content under direct human experiment design and review.
+public_label: Self-assessed benchmark report is 2.4/5 slop: agent drafted substantial content under direct human experiment design and review.
 ```
 
 ## Forgotten Human Example
@@ -303,5 +307,5 @@ understanding_basis: Author is rusty, but gave author-consistent constraints, re
 failed_probes: exact test invariant
 disagreement: none
 move_down_plan: To reach 0.0, author would need to recover exact test invariants and one concrete branch-level behavior.
-public_label: Parser change is 0.6/5 slop: credible human-authored work with rusty present recall.
+public_label: Self-assessed parser change is 0.6/5 slop: credible human-authored work with rusty present recall.
 ```
