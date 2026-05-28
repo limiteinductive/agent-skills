@@ -172,21 +172,17 @@ If the author raises a correct flaw in the rubric or audit method, treat that as
 
 ## Output
 
-Return the final verdict as wrapping Markdown bullets. Do not use fenced code blocks or Markdown tables for the final verdict. Long values must wrap naturally in chat and PR comments.
+Return the final verdict as compact wrapping Markdown bullets. Do not use fenced code blocks or Markdown tables. Keep it to 5 bullets by default:
 
-- `human_self_score`: <score or unknown>
-- `agent_score`: <0.0/5 to 5.0/5>
-- `band`: <0/5 to 5/5>
-- `confidence`: <high | medium | low>
-- `probe_ledger`: <counts by probe type and grade>
-- `provenance_basis`: <short evidence>
-- `understanding_basis`: <short evidence>
-- `failed_probes`: <none or concise list>
-- `disagreement`: <none or self-score vs agent-score gap>
-- `move_down_plan`: <specific work to reduce score>
-- `public_label`: <one sentence suitable for review notes or artifact metadata>
+- `score`: human <score>, agent <score>, band <band>, confidence <level>.
+- `basis`: <one sentence combining provenance and understanding basis>
+- `ledger`: <probe counts and failed probes, compressed>
+- `move_down`: <specific work to reduce score>
+- `label`: <one sentence suitable for review notes or artifact metadata>
 
-Use `public_label` only as an author-owned self-disclosure for the audited artifact. Do not attach audit output to another person's contribution as if it were an external judgment.
+If the user asks for full detail, expand into the same fields plus separate `provenance_basis`, `understanding_basis`, `failed_probes`, and `disagreement`.
+
+Use `label` only as an author-owned self-disclosure for the audited artifact. Do not attach audit output to another person's contribution as if it were an external judgment.
 
 Do not soften the score to match self-score. The author may contest with concrete evidence, but the agent owns the advisory verdict.
 
@@ -207,14 +203,8 @@ Probe transcript:
 
 Verdict:
 
-- `human_self_score`: `3/5`
-- `agent_score`: `2.4/5`
-- `band`: `2/5`
-- `confidence`: high
-- `probe_ledger`: provenance strong 1, comprehension strong 2, generative strong 1
-- `provenance_basis`: Agent drafted substantial report content, but author claims experiment design, benchmark execution, number review, and caveat rewrites.
-- `understanding_basis`: Author explained confounders, evidence limits, rejected framing, and a concrete reproducibility improvement without supplied answers.
-- `failed_probes`: none
-- `disagreement`: self-score `3/5`, agent-score `2.4/5`. Exact-match tripwire not triggered.
-- `move_down_plan`: To reach `1.x`, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
-- `public_label`: Self-assessed benchmark report is `2.4/5` slop: agent drafted substantial content under direct human experiment design and review.
+- `score`: human `3/5`, agent `2.4/5`, band `2/5`, confidence high.
+- `basis`: agent drafted substantial report content; author owned experiment design, benchmark execution, number review, caveats, and evidence limits.
+- `ledger`: provenance strong 1, comprehension strong 2, generative strong 1; no failed probes; exact-match tripwire not triggered.
+- `move_down`: to reach `1.x`, show evidence that agent only performed auxiliary drafting or formatting.
+- `label`: self-assessed benchmark report is `2.4/5` slop: agent drafted substantial content under direct human experiment design and review.
