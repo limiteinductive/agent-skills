@@ -1,6 +1,6 @@
 ---
 name: slope-audit
-description: Assess how agentic a PR, code change, document, or technical contribution is on a 0/5 to 5/5 slope scale. Use when Codex needs to interview an author about PR ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slope-audit.
+description: Assess how agentic a PR, code change, document, plan, issue, message, report, or technical contribution is on a 0/5 to 5/5 slope scale. Use when Codex needs to interview an author about ownership, human understanding, agent involvement, review depth, production readiness transparency, or when the user invokes $slope-audit.
 ---
 
 # Slope Audit
@@ -56,7 +56,7 @@ Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not 
 
 ## Workflow
 
-1. Inspect the artifact before interviewing. For PRs, inspect the diff, commits, tests, checks, touched code, and stated purpose. Prefer real files and commands over summaries.
+1. Inspect the artifact before interviewing. Prefer source artifacts over summaries.
 2. Ask the author for two things first: their self-score and a brief agent-use claim. Treat this as a claim to test, not as truth.
 3. Start the working score at `5.0/5`. Lower it only when provenance plus interview evidence supports a lower score.
 4. Ask freeform technical questions in normal chat, one question at a time. Do not use multiple-choice questions for scoring probes.
@@ -64,11 +64,21 @@ Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not 
 6. Stop when the likely score bracket is within 1 point at medium or high confidence, two consecutive scoring probes do not change the bracket, or the cap is reached.
 7. Produce the output contract. Include disagreement between author self-score and agent score.
 
-If the author has the PR open during the interview, state that the audit measures current review and maintenance ownership, not necessarily what they knew while producing the change.
+If the author has the artifact open during the interview, state that the audit measures current review and maintenance ownership, not necessarily what they knew while producing the contribution.
+
+## Artifact Modes
+
+Adapt the inspection and probes to the artifact. PRs are one mode, not the only mode.
+
+- PR or code change: inspect diff, commits, tests, checks, touched code, and stated purpose. Probe invariants, data flow, failures, tests, rollout risk, and implementation alternatives.
+- Design doc, plan, or spec: inspect audience, goals, requirements, decisions, rejected options, constraints, open questions, and review comments. Probe assumptions, tradeoffs, missing cases, decision rationale, and rollout path.
+- Issue, ticket, or task: inspect problem statement, acceptance criteria, linked context, owner updates, state transitions, and proposed next steps. Probe root cause, scope boundaries, dependencies, and how success will be verified.
+- Research note, experiment report, or benchmark writeup: inspect claim, method, data, commands, environment, comparisons, and conclusion. Probe confounders, reproducibility, interpretation limits, and what would change the conclusion.
+- Message, review comment, announcement, or status update: inspect thread context, factual claims, requested decision, audience, and implied commitments. Probe provenance of claims, omitted caveats, expected reader action, and what would be misleading if wrong.
 
 ## Consultation Policy
 
-Allow the author to consult the PR, code, tests, benchmark output, docs, notes, and prior review comments during the interview. The default audit is open-book because production ownership is about whether the author can review, maintain, debug, and extend the artifact now.
+Allow the author to consult the artifact, source material, tests, benchmark output, docs, notes, thread context, and prior review comments during the interview. The default audit is open-book because production ownership is about whether the author can review, maintain, debug, explain, and extend the artifact now.
 
 Require the author to answer in chat in their own words. Do not accept pasted code, copied snippets, external summaries, or agent-generated explanations as ownership evidence unless the author explains what they mean and why they matter.
 
@@ -78,13 +88,13 @@ If the user explicitly requests closed-book mode, do not allow consultation and 
 
 ## Probe Types
 
-Use a mix of these probes. Pick questions from the actual diff and risk surface.
+Use a mix of these probes. Pick questions from the actual artifact and risk surface.
 
 ### Provenance Probes
 
 Use these to separate `0/1/2` from `3/4/5`.
 
-- Ask who produced the idea, structure, implementation, tests, review comments, and final text.
+- Ask who produced the idea, structure, implementation, evidence, wording, tests, review comments, and final text.
 - Ask what the author wrote manually, what the agent generated, and what they changed after agent output.
 - Ask which parts they would be comfortable owning without the agent present.
 - Require attestation for `0/1/2`. Comprehension alone cannot prove these levels.
@@ -93,19 +103,20 @@ Use these to separate `0/1/2` from `3/4/5`.
 
 Use these to separate `3/4/5`.
 
-- Ask about invariants, data flow, control flow, failure modes, test meaning, rollout risk, and backward compatibility.
-- Ask what would break if one condition, flag, helper, schema field, or ordering changed.
-- Ask why a test proves the intended behavior and what it does not prove.
-- Ask how runtime behavior differs before and after the PR.
+- For code, ask about invariants, data flow, control flow, failure modes, test meaning, rollout risk, and backward compatibility.
+- For prose, ask about claims, assumptions, evidence, audience, caveats, decision rationale, and failure modes if the content is wrong or incomplete.
+- Ask what would break, become misleading, or change if one condition, claim, citation, dependency, schema field, or ordering changed.
+- Ask why a test, citation, benchmark, example, or review check proves the intended claim and what it does not prove.
+- Ask how behavior, reader belief, project state, or operational risk differs before and after the contribution.
 
 ### Generative Probes
 
 Use these to separate `0/1/2/3`.
 
-- Ask how the author would implement a nearby extension live.
-- Ask what alternative implementation they rejected and why.
-- Ask how they would rewrite a small area for clarity or safety.
-- Ask them to predict one realistic follow-up bug and where they would look first.
+- Ask how the author would implement, revise, or extend a nearby part live.
+- Ask what alternative implementation, framing, experiment, or decision they rejected and why.
+- Ask how they would rewrite a small area for clarity, safety, correctness, or stronger evidence.
+- Ask them to predict one realistic follow-up bug, objection, misunderstanding, or failure mode and where they would look first.
 
 Generative ownership is the main evidence for "I could have written this myself." Passive understanding is not enough.
 
@@ -122,8 +133,8 @@ If any answer is yes, rewrite the question.
 
 Allowed context:
 
-- Locate the area: function, file, command, test name, PR section, or feature.
-- State what kind of answer is expected: invariant, failure mode, alternative, test gap.
+- Locate the area: function, file, command, test name, artifact section, thread, or feature.
+- State what kind of answer is expected: invariant, failure mode, alternative, test gap, or evidence gap.
 
 Banned context:
 
@@ -142,18 +153,18 @@ Classify each answer immediately, but do not over-explain during the interview.
 Strong evidence:
 
 - Cites specific behavior not supplied by you.
-- Names relevant functions, paths, tests, flags, schemas, or runtime conditions.
-- Predicts plausible failure modes.
-- Explains test coverage limits.
+- Names relevant functions, paths, tests, flags, schemas, claims, data, thread context, or runtime conditions.
+- Predicts plausible failure modes, objections, or misunderstandings.
+- Explains test, benchmark, citation, or evidence limits.
 - Gives a plausible rejected alternative.
-- Performs a small design extension without relying on your explanation.
+- Performs a small implementation, design, or content extension without relying on your explanation.
 
 Weak evidence:
 
-- Repeats the PR title or broad intent.
+- Repeats the title or broad intent.
 - Gives generic implementation language.
 - Restates your wording.
-- Cannot connect tests to risk.
+- Cannot connect tests, evidence, or claims to risk.
 - Explains only high-level outcome.
 - Agrees with your framing without adding independent evidence.
 
@@ -161,7 +172,7 @@ Failure evidence:
 
 - No substantive answer.
 - Generic answer after a targeted probe.
-- Asking you to explain the relevant code first.
+- Asking you to explain the relevant artifact first.
 - Confident wrong answer.
 - Repeated "not sure" on material behavior.
 - Refusal or persistently thin answers.
@@ -196,7 +207,7 @@ understanding_basis: <short evidence>
 failed_probes: <none or concise list>
 disagreement: <none or self-score vs agent-score gap>
 move_down_plan: <specific work to reduce score>
-public_label: <one sentence suitable for PR or review notes>
+public_label: <one sentence suitable for review notes or artifact metadata>
 ```
 
 Keep the final verdict terse and evidence-based. Do not soften the score to match the author's self-score. The author may contest with concrete evidence, but the agent owns the advisory verdict.
