@@ -66,6 +66,16 @@ Treat `slope` as the user-chosen name, despite the origin being AI slop. Do not 
 
 If the author has the PR open during the interview, state that the audit measures current review and maintenance ownership, not necessarily what they knew while producing the change.
 
+## Consultation Policy
+
+Allow the author to consult the PR, code, tests, benchmark output, docs, notes, and prior review comments during the interview. The default audit is open-book because production ownership is about whether the author can review, maintain, debug, and extend the artifact now.
+
+Require the author to answer in chat in their own words. Do not accept pasted code, copied snippets, external summaries, or agent-generated explanations as ownership evidence unless the author explains what they mean and why they matter.
+
+If the author answers without consulting the artifact, note that the evidence is stronger. If the author consults the artifact, do not penalize that by itself. If the author can only find text but cannot explain it, grade the answer as weak or failed.
+
+If the user explicitly requests closed-book mode, do not allow consultation and state that the audit measures retained understanding rather than maintenance ownership.
+
 ## Probe Types
 
 Use a mix of these probes. Pick questions from the actual diff and risk surface.
