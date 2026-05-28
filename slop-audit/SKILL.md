@@ -239,21 +239,21 @@ confidence rather than inventing precision.
 
 ## Output
 
-Return this structure:
+Return the final verdict as wrapping Markdown bullets. Do not use fenced code blocks or Markdown tables for the final verdict. Long values must wrap naturally in chat and PR comments.
 
-```text
-human_self_score: <score or unknown>
-agent_score: <0.0/5 to 5.0/5>
-band: <0/5 to 5/5>
-confidence: <high | medium | low>
-probe_ledger: <counts by probe type and grade>
-provenance_basis: <short evidence>
-understanding_basis: <short evidence>
-failed_probes: <none or concise list>
-disagreement: <none or self-score vs agent-score gap>
-move_down_plan: <specific work to reduce score>
-public_label: <one sentence suitable for review notes or artifact metadata>
-```
+Use this structure:
+
+- `human_self_score`: <score or unknown>
+- `agent_score`: <0.0/5 to 5.0/5>
+- `band`: <0/5 to 5/5>
+- `confidence`: <high | medium | low>
+- `probe_ledger`: <counts by probe type and grade>
+- `provenance_basis`: <short evidence>
+- `understanding_basis`: <short evidence>
+- `failed_probes`: <none or concise list>
+- `disagreement`: <none or self-score vs agent-score gap>
+- `move_down_plan`: <specific work to reduce score>
+- `public_label`: <one sentence suitable for review notes or artifact metadata>
 
 Use `public_label` only as an author-owned self-disclosure for the audited artifact. Do not attach this audit output to another person's contribution as if it were an external judgment.
 
@@ -293,19 +293,17 @@ Probe transcript:
 
 Verdict:
 
-```text
-human_self_score: 3/5
-agent_score: 2.4/5
-band: 2/5
-confidence: high
-probe_ledger: provenance strong 1, comprehension strong 2, authorship strong 1
-provenance_basis: Agent drafted substantial report content, but author claims experiment design, benchmark execution, number review, and caveat rewrites.
-understanding_basis: Author explained confounders, evidence limits, rejected framing, and rollout revision without supplied answers.
-failed_probes: none
-disagreement: self-score 3/5, agent-score 2.4/5
-move_down_plan: To reach 1.x, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
-public_label: Self-assessed benchmark report is 2.4/5 slop: agent drafted substantial content under direct human experiment design and review.
-```
+- `human_self_score`: `3/5`
+- `agent_score`: `2.4/5`
+- `band`: `2/5`
+- `confidence`: high
+- `probe_ledger`: provenance strong 1, comprehension strong 2, authorship strong 1
+- `provenance_basis`: Agent drafted substantial report content, but author claims experiment design, benchmark execution, number review, and caveat rewrites.
+- `understanding_basis`: Author explained confounders, evidence limits, rejected framing, and rollout revision without supplied answers.
+- `failed_probes`: none
+- `disagreement`: self-score `3/5`, agent-score `2.4/5`
+- `move_down_plan`: To reach `1.x`, author would need evidence that agent only performed auxiliary drafting or formatting rather than substantial report writing.
+- `public_label`: Self-assessed benchmark report is `2.4/5` slop: agent drafted substantial content under direct human experiment design and review.
 
 ## Forgotten Human Example
 
@@ -341,16 +339,14 @@ Probe transcript:
 
 Verdict:
 
-```text
-human_self_score: 0/5
-agent_score: 0.6/5
-band: 0/5
-confidence: medium
-probe_ledger: provenance strong 1, authorship strong 1 partial 1, comprehension weak 1
-provenance_basis: Author credibly attests no agent involvement across code, tests, commit, and review replies.
-understanding_basis: Author is rusty, but gave author-consistent constraints, recovery path, and rejected-library rationale.
-failed_probes: exact test invariant
-disagreement: none
-move_down_plan: To reach 0.0, author would need to recover exact test invariants and one concrete branch-level behavior.
-public_label: Self-assessed parser change is 0.6/5 slop: credible human-authored work with rusty present recall.
-```
+- `human_self_score`: `0/5`
+- `agent_score`: `0.6/5`
+- `band`: `0/5`
+- `confidence`: medium
+- `probe_ledger`: provenance strong 1, authorship strong 1 partial 1, comprehension weak 1
+- `provenance_basis`: Author credibly attests no agent involvement across code, tests, commit, and review replies.
+- `understanding_basis`: Author is rusty, but gave author-consistent constraints, recovery path, and rejected-library rationale.
+- `failed_probes`: exact test invariant
+- `disagreement`: none
+- `move_down_plan`: To reach `0.0`, author would need to recover exact test invariants and one concrete branch-level behavior.
+- `public_label`: Self-assessed parser change is `0.6/5` slop: credible human-authored work with rusty present recall.
