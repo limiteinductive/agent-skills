@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slop Audit"
+  short_description: "Audit artifact agent ownership"
+  default_prompt: "Use $slop-audit to interview me on a contribution and assign an advisory slop score."
