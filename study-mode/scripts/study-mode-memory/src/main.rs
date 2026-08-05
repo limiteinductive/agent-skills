@@ -2,17 +2,36 @@ use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use clap::{Parser, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use serde_json::Value;
+use sqlx::postgres::PgPoolOptions;
+use sqlx::{PgPool, Row};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::Duration as StdDuration;
+use uuid::Uuid;
 
 const ALGORITHM_VERSION: &str = "study-srs-v1";
+const EVENT_ID_NAMESPACE: Uuid = uuid::uuid!("1b8c6d23-f55f-4a0a-a49e-f1d8272c106d");
+const DATABASE_URL_ENV: &str = "STUDY_MODE_DATABASE_URL";
+const DEVICE_ID_ENV: &str = "STUDY_MODE_DEVICE_ID";
+const DB_CONFIG_NAME_ENV: &str = "STUDY_MODE_DB_CONFIG_NAME";
+const REQUIRED_COLUMNS: &[&str] = &[
+    "event_id",
+    "created_at",
+    "received_at",
+    "device_id",
+    "concept_id",
+    "topic",
+    "concept",
+    "entry_json",
+];
 
 #[derive(Parser, Debug)]
 #[command(name = "study-mode-memory")]
-#[command(about = "Persistent Study Mode memory and dependency-free spaced repetition backend.")]
+#[command(about = "Persistent Study Mode memory and spaced repetition backend.")]
 struct Cli {
     #[arg(long, global = true, value_name = "PATH")]
     store: Option<PathBuf>,
@@ -23,13 +42,26 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Print the default memory store path.
     Path,
+    /// Record a new concept or non-review learning event.
     Record(RecordArgs),
+    /// Record a retrieval-practice review event.
     Review(ReviewArgs),
+    /// Show due spaced-repetition review items.
     Due(DueArgs),
+    /// Show recent study memory entries.
     Show(ShowArgs),
+    /// Search study memory entries.
     Search(SearchArgs),
+    /// Summarize recent study memory and calibration signals.
     Profile(ProfileArgs),
+    /// Merge local memory with the configured Cloud SQL Postgres database.
+    Sync,
+    /// Check local memory and Cloud SQL sync configuration.
+    Doctor,
+    /// Rewrite local memory entries with stable event IDs.
+    ImportLocal,
 }
 
 #[derive(clap::Args, Debug)]
@@ -171,6 +203,8 @@ enum RecallResult {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct Entry {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    event_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     algorithm_version: String,
     concept_id: String,
@@ -210,7 +244,24 @@ struct ReviewSignal {
     misconceptions: Vec<String>,
 }
 
-fn main() -> Result<()> {
+#[derive(Clone, Debug)]
+struct EntryRecord {
+    entry: Entry,
+    had_event_id: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
+struct SyncState {
+    device_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    db_config_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_successful_sync_at: Option<DateTime<Utc>>,
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
     let store = cli.store.unwrap_or_else(default_store_path);
 
@@ -222,6 +273,9 @@ fn main() -> Result<()> {
         Command::Show(args) => cmd_show(&store, args)?,
         Command::Search(args) => cmd_search(&store, args)?,
         Command::Profile(args) => cmd_profile(&store, args)?,
+        Command::Sync => cmd_sync(&store).await?,
+        Command::Doctor => cmd_doctor(&store).await?,
+        Command::ImportLocal => cmd_import_local(&store)?,
     }
 
     Ok(())
@@ -257,6 +311,7 @@ fn cmd_record(store: &PathBuf, args: RecordArgs) -> Result<()> {
     };
 
     let entry = Entry {
+        event_id: Some(Uuid::new_v4()),
         created_at: now,
         algorithm_version: ALGORITHM_VERSION.to_string(),
         concept_id: concept_id(&args.topic, &args.concept),
@@ -311,6 +366,7 @@ fn cmd_review(store: &PathBuf, args: ReviewArgs) -> Result<()> {
     let next_review_at = now + duration_from_days(memory.stability_days);
 
     let entry = Entry {
+        event_id: Some(Uuid::new_v4()),
         created_at: now,
         algorithm_version: ALGORITHM_VERSION.to_string(),
         concept_id: concept_id(&args.topic, &args.concept),
@@ -369,10 +425,11 @@ fn cmd_due(store: &PathBuf, args: DueArgs) -> Result<()> {
 
 fn cmd_show(store: &PathBuf, args: ShowArgs) -> Result<()> {
     let entries = read_entries(store)?;
-    let filtered: Vec<&Entry> = entries
+    let mut filtered: Vec<&Entry> = entries
         .iter()
         .filter(|entry| topic_matches(entry, args.topic.as_deref()))
         .collect();
+    filtered.sort_by_key(|entry| entry_order(entry));
 
     if filtered.is_empty() {
         println!("No matching study memory entries.");
@@ -389,10 +446,11 @@ fn cmd_show(store: &PathBuf, args: ShowArgs) -> Result<()> {
 fn cmd_search(store: &PathBuf, args: SearchArgs) -> Result<()> {
     let query = args.query.to_lowercase();
     let entries = read_entries(store)?;
-    let filtered: Vec<&Entry> = entries
+    let mut filtered: Vec<&Entry> = entries
         .iter()
         .filter(|entry| searchable_text(entry).contains(&query))
         .collect();
+    filtered.sort_by_key(|entry| entry_order(entry));
 
     if filtered.is_empty() {
         println!("No matching study memory entries.");
@@ -408,10 +466,11 @@ fn cmd_search(store: &PathBuf, args: SearchArgs) -> Result<()> {
 
 fn cmd_profile(store: &PathBuf, args: ProfileArgs) -> Result<()> {
     let entries = read_entries(store)?;
-    let filtered: Vec<&Entry> = entries
+    let mut filtered: Vec<&Entry> = entries
         .iter()
         .filter(|entry| topic_matches(entry, args.topic.as_deref()))
         .collect();
+    filtered.sort_by_key(|entry| entry_order(entry));
 
     if filtered.is_empty() {
         println!("No matching study profile yet.");
@@ -480,14 +539,143 @@ fn cmd_profile(store: &PathBuf, args: ProfileArgs) -> Result<()> {
     Ok(())
 }
 
+async fn cmd_sync(store: &PathBuf) -> Result<()> {
+    let pool = connect_database().await?;
+    ensure_schema(&pool).await?;
+
+    let entries = read_entries(store)?;
+    let mut local_ids = HashSet::new();
+    let mut duplicate_local_events = 0usize;
+    for entry in &entries {
+        let event_id = required_event_id(entry)?;
+        if !local_ids.insert(event_id) {
+            duplicate_local_events += 1;
+        }
+    }
+
+    let mut state = load_sync_state(store)?;
+    let device_id = resolve_device_id(&state)?;
+    state.device_id = device_id.clone();
+    state.db_config_name = database_config_name();
+
+    let remote_ids = fetch_remote_event_ids(&pool).await?;
+    let mut pushed = 0usize;
+    for entry in &entries {
+        let event_id = required_event_id(entry)?;
+        if !remote_ids.contains(&event_id) {
+            insert_remote_event(&pool, &device_id, entry).await?;
+            pushed += 1;
+        }
+    }
+
+    let remote_events = fetch_remote_events(&pool).await?;
+    let mut pulled = Vec::new();
+    for (event_id, entry_json) in remote_events {
+        if local_ids.contains(&event_id) {
+            continue;
+        }
+        let entry = entry_from_remote_event(event_id, entry_json)?;
+        if local_ids.insert(event_id) {
+            pulled.push(entry);
+        }
+    }
+    append_entries(store, &pulled)?;
+
+    state.last_successful_sync_at = Some(Utc::now());
+    save_sync_state(store, &state)?;
+
+    if duplicate_local_events > 0 {
+        println!(
+            "Synced study memory: pushed {}, pulled {}, duplicate local events skipped {}",
+            pushed,
+            pulled.len(),
+            duplicate_local_events
+        );
+    } else {
+        println!(
+            "Synced study memory: pushed {}, pulled {}",
+            pushed,
+            pulled.len()
+        );
+    }
+    Ok(())
+}
+
+async fn cmd_doctor(store: &PathBuf) -> Result<()> {
+    let records = read_entry_records(store)?;
+    let missing_event_ids = records.iter().filter(|record| !record.had_event_id).count();
+    let mut event_ids = HashSet::new();
+    let duplicate_event_ids = records
+        .iter()
+        .filter_map(|record| record.entry.event_id)
+        .filter(|event_id| !event_ids.insert(*event_id))
+        .count();
+
+    println!("Local store: {}", store.display());
+    println!("- entries: {}", records.len());
+    println!("- legacy entries without event_id: {}", missing_event_ids);
+    println!("- duplicate event_ids: {}", duplicate_event_ids);
+
+    let state_path = sync_state_path(store)?;
+    let state = load_sync_state(store)?;
+    println!("Sync state: {}", state_path.display());
+    if !state.device_id.is_empty() {
+        println!("- device_id: {}", state.device_id);
+    }
+    if let Some(last_sync) = state.last_successful_sync_at {
+        println!("- last successful sync: {}", last_sync);
+    }
+
+    let pool = connect_database().await?;
+    let missing_columns = missing_schema_columns(&pool).await?;
+    if !missing_columns.is_empty() {
+        return Err(anyhow!(
+            "study_events schema is missing required columns: {}",
+            missing_columns.join(", ")
+        ));
+    }
+
+    let remote_count: i64 = sqlx::query_scalar("select count(*) from study_events")
+        .fetch_one(&pool)
+        .await
+        .context("failed to count remote study_events")?;
+    println!("Database: connected; study_events rows: {}", remote_count);
+    Ok(())
+}
+
+fn cmd_import_local(store: &PathBuf) -> Result<()> {
+    if !store.exists() {
+        println!("No local study memory file at {}", store.display());
+        return Ok(());
+    }
+
+    let records = read_entry_records(store)?;
+    let assigned = records.iter().filter(|record| !record.had_event_id).count();
+    let entries: Vec<Entry> = records.into_iter().map(|record| record.entry).collect();
+    rewrite_entries(store, &entries)?;
+    println!(
+        "Normalized {} local study entries; assigned {} legacy event_ids",
+        entries.len(),
+        assigned
+    );
+    Ok(())
+}
+
 fn read_entries(store: &PathBuf) -> Result<Vec<Entry>> {
+    Ok(read_entry_records(store)?
+        .into_iter()
+        .map(|record| record.entry)
+        .collect())
+}
+
+fn read_entry_records(store: &PathBuf) -> Result<Vec<EntryRecord>> {
     if !store.exists() {
         return Ok(Vec::new());
     }
 
     let file = File::open(store).with_context(|| format!("failed to open {}", store.display()))?;
     let reader = BufReader::new(file);
-    let mut entries = Vec::new();
+    let mut records = Vec::new();
 
     for (index, line) in reader.lines().enumerate() {
         let line = line.with_context(|| format!("failed to read {}", store.display()))?;
@@ -495,15 +683,20 @@ fn read_entries(store: &PathBuf) -> Result<Vec<Entry>> {
         if trimmed.is_empty() {
             continue;
         }
-        let entry: Entry = serde_json::from_str(trimmed)
-            .with_context(|| format!("invalid JSON on line {}", index + 1))?;
-        entries.push(entry);
+        records.push(parse_entry_record(trimmed, index + 1)?);
     }
 
-    Ok(entries)
+    Ok(records)
 }
 
 fn append_entry(store: &PathBuf, entry: &Entry) -> Result<()> {
+    append_entries(store, std::slice::from_ref(entry))
+}
+
+fn append_entries(store: &PathBuf, entries: &[Entry]) -> Result<()> {
+    if entries.is_empty() {
+        return Ok(());
+    }
     if let Some(parent) = store.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create {}", parent.display()))?;
@@ -513,14 +706,329 @@ fn append_entry(store: &PathBuf, entry: &Entry) -> Result<()> {
         .append(true)
         .open(store)
         .with_context(|| format!("failed to open {}", store.display()))?;
-    writeln!(file, "{}", serde_json::to_string(entry)?)
-        .with_context(|| format!("failed to write {}", store.display()))?;
+    for entry in entries {
+        required_event_id(entry)?;
+        writeln!(file, "{}", serde_json::to_string(entry)?)
+            .with_context(|| format!("failed to write {}", store.display()))?;
+    }
     Ok(())
+}
+
+fn rewrite_entries(store: &PathBuf, entries: &[Entry]) -> Result<()> {
+    if let Some(parent) = store.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+
+    let temp = temp_path(store);
+    {
+        let mut file =
+            File::create(&temp).with_context(|| format!("failed to create {}", temp.display()))?;
+        for entry in entries {
+            required_event_id(entry)?;
+            writeln!(file, "{}", serde_json::to_string(entry)?)
+                .with_context(|| format!("failed to write {}", temp.display()))?;
+        }
+    }
+    fs::rename(&temp, store).with_context(|| {
+        format!(
+            "failed to replace {} with {}",
+            store.display(),
+            temp.display()
+        )
+    })?;
+    Ok(())
+}
+
+fn parse_entry_record(line: &str, line_number: usize) -> Result<EntryRecord> {
+    let mut entry: Entry = serde_json::from_str(line)
+        .with_context(|| format!("invalid JSON on line {}", line_number))?;
+    let had_event_id = entry.event_id.is_some();
+    if entry.event_id.is_none() {
+        entry.event_id = Some(legacy_event_id(line));
+    }
+    Ok(EntryRecord {
+        entry,
+        had_event_id,
+    })
+}
+
+fn required_event_id(entry: &Entry) -> Result<Uuid> {
+    entry
+        .event_id
+        .ok_or_else(|| anyhow!("study memory entry is missing event_id"))
+}
+
+fn legacy_event_id(payload: &str) -> Uuid {
+    Uuid::new_v5(&EVENT_ID_NAMESPACE, payload.as_bytes())
+}
+
+fn temp_path(path: &Path) -> PathBuf {
+    let mut temp = path.to_path_buf();
+    let filename = path
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| "memory.jsonl".to_string());
+    temp.set_file_name(format!("{}.tmp.{}", filename, std::process::id()));
+    temp
+}
+
+async fn connect_database() -> Result<PgPool> {
+    let database_url = env::var(DATABASE_URL_ENV)
+        .map(|value| value.trim().to_string())
+        .unwrap_or_default();
+    if database_url.is_empty() {
+        return Err(anyhow!(
+            "{} must be set to a Postgres connection string",
+            DATABASE_URL_ENV
+        ));
+    }
+
+    tokio::time::timeout(
+        StdDuration::from_secs(10),
+        PgPoolOptions::new()
+            .max_connections(3)
+            .connect(&database_url),
+    )
+    .await
+    .context("timed out connecting to the study memory database")?
+    .context("failed to connect to the study memory database")
+}
+
+async fn ensure_schema(pool: &PgPool) -> Result<()> {
+    sqlx::query(
+        r#"
+        create table if not exists study_events (
+            event_id uuid primary key,
+            created_at timestamptz not null,
+            received_at timestamptz not null default now(),
+            device_id text not null,
+            concept_id text not null,
+            topic text not null,
+            concept text not null,
+            entry_json jsonb not null
+        )
+        "#,
+    )
+    .execute(pool)
+    .await
+    .context("failed to create study_events table")?;
+
+    sqlx::query(
+        "create index if not exists study_events_created_at_idx on study_events (created_at, event_id)",
+    )
+    .execute(pool)
+    .await
+    .context("failed to create study_events_created_at_idx")?;
+
+    sqlx::query(
+        "create index if not exists study_events_concept_idx on study_events (concept_id, created_at desc)",
+    )
+    .execute(pool)
+    .await
+    .context("failed to create study_events_concept_idx")?;
+
+    sqlx::query("create index if not exists study_events_topic_idx on study_events (topic)")
+        .execute(pool)
+        .await
+        .context("failed to create study_events_topic_idx")?;
+    Ok(())
+}
+
+async fn missing_schema_columns(pool: &PgPool) -> Result<Vec<String>> {
+    let columns: Vec<String> = sqlx::query_scalar(
+        r#"
+        select column_name
+        from information_schema.columns
+        where table_schema = 'public' and table_name = 'study_events'
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .context("failed to inspect study_events schema")?;
+    let present: HashSet<String> = columns.into_iter().collect();
+    Ok(REQUIRED_COLUMNS
+        .iter()
+        .filter(|column| {
+            !present
+                .iter()
+                .any(|present_column| present_column == *column)
+        })
+        .map(|column| column.to_string())
+        .collect())
+}
+
+async fn fetch_remote_event_ids(pool: &PgPool) -> Result<HashSet<Uuid>> {
+    let ids: Vec<Uuid> = sqlx::query_scalar("select event_id from study_events")
+        .fetch_all(pool)
+        .await
+        .context("failed to fetch remote study event IDs")?;
+    Ok(ids.into_iter().collect())
+}
+
+async fn fetch_remote_events(pool: &PgPool) -> Result<Vec<(Uuid, Value)>> {
+    let rows = sqlx::query(
+        r#"
+        select event_id, entry_json
+        from study_events
+        order by created_at, event_id
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .context("failed to fetch remote study events")?;
+
+    rows.into_iter()
+        .map(|row| {
+            let event_id: Uuid = row.try_get("event_id")?;
+            let entry_json: Value = row.try_get("entry_json")?;
+            Ok((event_id, entry_json))
+        })
+        .collect()
+}
+
+async fn insert_remote_event(pool: &PgPool, device_id: &str, entry: &Entry) -> Result<()> {
+    let event_id = required_event_id(entry)?;
+    let entry_json = serde_json::to_value(entry)?;
+    sqlx::query(
+        r#"
+        insert into study_events (
+            event_id,
+            created_at,
+            device_id,
+            concept_id,
+            topic,
+            concept,
+            entry_json
+        )
+        values ($1, $2, $3, $4, $5, $6, $7)
+        on conflict (event_id) do nothing
+        "#,
+    )
+    .bind(event_id)
+    .bind(entry.created_at)
+    .bind(device_id)
+    .bind(&entry.concept_id)
+    .bind(&entry.topic)
+    .bind(&entry.concept)
+    .bind(entry_json)
+    .execute(pool)
+    .await
+    .with_context(|| format!("failed to push study event {}", event_id))?;
+    Ok(())
+}
+
+fn entry_from_remote_event(event_id: Uuid, entry_json: Value) -> Result<Entry> {
+    let mut entry: Entry = serde_json::from_value(entry_json).with_context(|| {
+        format!(
+            "remote study event {} contains invalid entry JSON",
+            event_id
+        )
+    })?;
+    match entry.event_id {
+        Some(payload_event_id) if payload_event_id != event_id => Err(anyhow!(
+            "remote study event {} has mismatched payload event_id {}",
+            event_id,
+            payload_event_id
+        )),
+        Some(_) => Ok(entry),
+        None => {
+            entry.event_id = Some(event_id);
+            Ok(entry)
+        }
+    }
+}
+
+fn sync_state_path(store: &Path) -> Result<PathBuf> {
+    let parent = store
+        .parent()
+        .ok_or_else(|| anyhow!("store path {} has no parent directory", store.display()))?;
+    Ok(parent.join("sync-state.json"))
+}
+
+fn load_sync_state(store: &Path) -> Result<SyncState> {
+    let path = sync_state_path(store)?;
+    if !path.exists() {
+        return Ok(SyncState::default());
+    }
+    let contents =
+        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
+    serde_json::from_str(&contents).with_context(|| format!("invalid JSON in {}", path.display()))
+}
+
+fn save_sync_state(store: &Path, state: &SyncState) -> Result<()> {
+    let path = sync_state_path(store)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create {}", parent.display()))?;
+    }
+    let temp = temp_path(&path);
+    fs::write(&temp, format!("{}\n", serde_json::to_string_pretty(state)?))
+        .with_context(|| format!("failed to write {}", temp.display()))?;
+    fs::rename(&temp, &path).with_context(|| {
+        format!(
+            "failed to replace {} with {}",
+            path.display(),
+            temp.display()
+        )
+    })?;
+    Ok(())
+}
+
+fn resolve_device_id(state: &SyncState) -> Result<String> {
+    let configured = env::var(DEVICE_ID_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if let Some(device_id) = configured {
+        return Ok(device_id);
+    }
+    if !state.device_id.trim().is_empty() {
+        return Ok(state.device_id.trim().to_string());
+    }
+    let hostname = hostname::get()
+        .context("failed to read local hostname for study sync device_id")?
+        .to_string_lossy()
+        .trim()
+        .to_string();
+    if hostname.is_empty() {
+        return Err(anyhow!(
+            "{} must be set because the local hostname is empty",
+            DEVICE_ID_ENV
+        ));
+    }
+    Ok(hostname)
+}
+
+fn database_config_name() -> Option<String> {
+    env::var(DB_CONFIG_NAME_ENV)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .or_else(|| {
+            env::var(DATABASE_URL_ENV)
+                .ok()
+                .map(|value| redact_database_url(value.trim()))
+                .filter(|value| !value.is_empty())
+        })
+}
+
+fn redact_database_url(database_url: &str) -> String {
+    let Some((scheme, rest)) = database_url.split_once("://") else {
+        return database_url.to_string();
+    };
+    let Some((_, host_and_database)) = rest.rsplit_once('@') else {
+        return database_url.to_string();
+    };
+    format!("{}://<redacted>@{}", scheme, host_and_database)
 }
 
 fn latest_for_concept<'a>(entries: &'a [Entry], topic: &str, concept: &str) -> Option<&'a Entry> {
     let id = concept_id(topic, concept);
-    entries.iter().rev().find(|entry| entry.concept_id == id)
+    entries
+        .iter()
+        .filter(|entry| entry.concept_id == id)
+        .max_by_key(|entry| entry_order(entry))
 }
 
 fn latest_entries<'a, I>(entries: I) -> Vec<&'a Entry>
@@ -529,9 +1037,18 @@ where
 {
     let mut latest: HashMap<String, &'a Entry> = HashMap::new();
     for entry in entries {
-        latest.insert(entry.concept_id.clone(), entry);
+        match latest.get(&entry.concept_id) {
+            Some(previous) if entry_order(previous) >= entry_order(entry) => {}
+            _ => {
+                latest.insert(entry.concept_id.clone(), entry);
+            }
+        }
     }
     latest.into_values().collect()
+}
+
+fn entry_order(entry: &Entry) -> (DateTime<Utc>, Uuid) {
+    (entry.created_at, entry.event_id.unwrap_or_else(Uuid::nil))
 }
 
 fn concept_id(topic: &str, concept: &str) -> String {
@@ -918,6 +1435,7 @@ mod tests {
     fn keeps_only_latest_entry_per_concept_for_due_queue() {
         let now = Utc.with_ymd_and_hms(2026, 5, 11, 0, 0, 0).unwrap();
         let old = Entry {
+            event_id: Some(Uuid::new_v4()),
             created_at: now - Duration::days(5),
             algorithm_version: ALGORITHM_VERSION.to_string(),
             concept_id: concept_id("calculus", "derivative"),
@@ -938,13 +1456,49 @@ mod tests {
             review: None,
         };
         let mut new = old.clone();
+        new.event_id = Some(Uuid::new_v4());
         new.created_at = now;
         new.summary = "new".to_string();
         new.next_review_at = now + Duration::days(3);
 
-        let entries = vec![old, new];
+        let entries = vec![new, old];
         let latest = latest_entries(entries.iter());
         assert_eq!(latest.len(), 1);
         assert_eq!(latest[0].summary, "new");
+    }
+
+    #[test]
+    fn assigns_stable_event_ids_to_legacy_jsonl_entries() {
+        let now = Utc.with_ymd_and_hms(2026, 5, 11, 0, 0, 0).unwrap();
+        let entry = Entry {
+            event_id: Some(Uuid::new_v4()),
+            created_at: now,
+            algorithm_version: ALGORITHM_VERSION.to_string(),
+            concept_id: concept_id("systems", "raft"),
+            topic: "systems".to_string(),
+            concept: "raft".to_string(),
+            summary: "legacy".to_string(),
+            status: Status::Introduced,
+            memory: initial_memory(None, None),
+            next_review_at: now + Duration::days(1),
+            review_after_days: 1.0,
+            evidence: None,
+            next_step: None,
+            difficulty_signal: None,
+            confidence: None,
+            pace: None,
+            user_signal: None,
+            preferences: Vec::new(),
+            review: None,
+        };
+        let mut value = serde_json::to_value(entry).unwrap();
+        value.as_object_mut().unwrap().remove("event_id");
+        let line = serde_json::to_string(&value).unwrap();
+
+        let first = parse_entry_record(&line, 1).unwrap();
+        let second = parse_entry_record(&line, 1).unwrap();
+
+        assert!(!first.had_event_id);
+        assert_eq!(first.entry.event_id, second.entry.event_id);
     }
 }
